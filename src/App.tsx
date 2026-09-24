@@ -1,0 +1,74 @@
+import { useEffect } from 'react'
+import { Header } from './components/layout/Header'
+import { Footer } from './components/layout/Footer'
+import { Homepage } from './components/home/Homepage'
+import { CategoryPage } from './components/category/CategoryPage'
+import { ArticlePage } from './components/article/ArticlePage'
+import { RecipePage } from './components/recipe/RecipePage'
+import { categories } from './lib/categories'
+import { getArticle } from './lib/articles'
+import { getRecipe } from './lib/recipes'
+import { DIYPage } from './components/diy/DIYPage'
+import { getDIY } from './lib/diy'
+import { AuthorPage } from './components/author/AuthorPage'
+import { getAuthorProfile } from './lib/authorProfiles'
+import { SearchPage } from './components/search/SearchPage'
+import { usePathname, useLinkInterceptor } from './lib/router'
+
+function Router() {
+  const pathname = usePathname()
+  const parts = pathname.replace(/^\/+/, '').split('/')
+  const slug = parts[0]
+
+  if (pathname === '/' || slug === '') return <Homepage />
+
+  // Universal Search Results Page: /search?q=...
+  if (slug === 'search') return <SearchPage />
+
+  // Universal Article Page: /article/:slug
+  if (slug === 'article') {
+    const article = getArticle(parts[1] ?? '')
+    if (article) return <ArticlePage article={article} />
+  }
+
+  // Universal Recipe Page: /recipe/:slug
+  if (slug === 'recipe') {
+    const recipe = getRecipe(parts[1] ?? '')
+    if (recipe) return <RecipePage recipe={recipe} />
+  }
+
+  // Universal Author Profile Page: /author/:slug
+  if (slug === 'author') {
+    const profile = getAuthorProfile(parts[1] ?? '')
+    if (profile) return <AuthorPage profile={profile} />
+  }
+
+  // Universal DIY / Tutorial Page: /diy/:slug (bare /diy falls through to the category)
+  if (slug === 'diy' && parts[1]) {
+    const project = getDIY(parts[1])
+    if (project) return <DIYPage project={project} />
+  }
+
+  const config = categories[slug]
+  if (config) return <CategoryPage config={config} />
+
+  // Any not-yet-built category route falls back to a live template so every
+  // nav link resolves. Defaults to the Christmas config's structure.
+  return <CategoryPage config={categories.christmas} />
+}
+
+export default function App() {
+  const onClick = useLinkInterceptor()
+  useEffect(() => {
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [onClick])
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <Router />
+      <Footer />
+    </div>
+  )
+}
